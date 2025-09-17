@@ -161,32 +161,37 @@ const RegisterWithVerification = () => {
   };
 
   const sendEmailViaEmailJS = async (email, verificationCode) => {
-    // Check if EmailJS is properly configured
-    if (!EMAILJS_CONFIG.serviceId || !EMAILJS_CONFIG.templateId || !EMAILJS_CONFIG.publicKey ||
-        EMAILJS_CONFIG.serviceId === 'YOUR_SERVICE_ID' || 
-        EMAILJS_CONFIG.templateId === 'YOUR_TEMPLATE_ID' ||
-        EMAILJS_CONFIG.publicKey === 'YOUR_PUBLIC_KEY') {
-      console.warn('⚠️ EmailJS not configured properly. Skipping email send.');
-      return false;
-    }
-
     try {
+      // Initialize EmailJS with public key
+      emailjs.init(EMAILJS_CONFIG.publicKey);
+      
+      const templateParams = {
+        user_name: email.split('@')[0],
+        user_email: email,
+        to_email: email,
+        from_name: 'LifeLink',
+        message: verificationCode,
+        verification_code: verificationCode,
+        reply_to: 'noreply@lifelink.com'
+      };
+
+      console.log('📧 Sending email with params:', templateParams);
+      
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
         EMAILJS_CONFIG.templateId,
-        {
-          to_email: email,
-          from_name: 'LifeLink',
-          message: `Your verification code is: ${verificationCode}`,
-          reply_to: 'noreply@lifelink.com'
-        },
-        EMAILJS_CONFIG.publicKey
+        templateParams
       );
 
       console.log('✅ Email sent successfully:', result);
       return true;
     } catch (error) {
       console.error('❌ EmailJS failed:', error);
+      console.error('Error details:', {
+        serviceId: EMAILJS_CONFIG.serviceId,
+        templateId: EMAILJS_CONFIG.templateId,
+        publicKey: EMAILJS_CONFIG.publicKey
+      });
       return false;
     }
   };
@@ -220,14 +225,15 @@ const RegisterWithVerification = () => {
           res.data.verificationCode
         );
         
+        // Always proceed to step 2, regardless of email success
+        setStep(2);
+        
         if (emailSent) {
-          setStep(2);
           setError('');
         } else {
           // EmailJS failed, but backend verification still works
-          console.log('📧 Email sending failed, but verification code is available in console');
-          setStep(2);
-          setError('Email sending failed. Check console for verification code or use Google Sign-In.');
+          console.log('🔑 Verification code for testing:', res.data.verificationCode);
+          setError('Email service unavailable. For testing, check browser console for the verification code.');
         }
       } else {
         setError(res.data.message || 'Failed to generate verification code');
