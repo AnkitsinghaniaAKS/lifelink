@@ -2,9 +2,10 @@
 
 A full-stack MERN application connecting blood donors with patients in need.
 
-## 🚀 Live Demo
-- **Frontend**: [https://your-app.vercel.app](https://your-app.vercel.app)
-- **Backend API**: [https://your-api.onrender.com](https://your-api.onrender.com)
+## Live Demo
+
+Check out the live version of the project here: [LifeLink Live Demo](https://lifelink-tan.vercel.app/)
+
 
 ## 🛠️ Tech Stack
 
@@ -94,7 +95,7 @@ VITE_API_URL=http://localhost:5000
 
 ## 📱 Key Features Demo
 
-1. **User Registration**: Email verification with 6-digit codes
+1. **User Registration**: Email verification with links
 2. **Google OAuth**: One-click social login
 3. **Donor Registration**: Blood type, location, availability
 4. **Patient Requests**: Urgent blood requests with priority levels
@@ -142,9 +143,9 @@ This project is licensed under the MIT License.
 ## 👨‍💻 Developer
 
 **Your Name**  
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-- Email: your.email@example.com
+- GitHub: [@yourusername](https://github.com/AnkitsinghaniaAKS)
+- LinkedIn: [Your LinkedIn](https://linkedin.com/in/ankit-singhania-aks)
+- Email: ankitsinghaniaaks@example.com
 
 ---
 
