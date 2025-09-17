@@ -163,10 +163,10 @@ const RegisterWithVerification = () => {
   const sendEmailViaEmailJS = async (email, verificationCode) => {
     try {
       const templateParams = {
-        user_email: email,
         user_name: email.split('@')[0],
+        user_email: email,
         verification_code: verificationCode,
-        to_email: email
+        message: verificationCode
       };
 
       const result = await emailjs.send(
