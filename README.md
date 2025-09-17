@@ -143,8 +143,8 @@ This project is licensed under the MIT License.
 ## 👨‍💻 Developer
 
 **Your Name**  
-- GitHub: [@yourusername](https://github.com/AnkitsinghaniaAKS)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/ankit-singhania-aks)
+- GitHub: [GitHUB](https://github.com/AnkitsinghaniaAKS)
+- LinkedIn: [LinkedIn](https://linkedin.com/in/ankit-singhania-aks)
 - Email: ankitsinghaniaaks@example.com
 
 ---
