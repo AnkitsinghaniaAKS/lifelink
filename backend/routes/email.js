@@ -16,6 +16,33 @@ const transporter = nodemailer.createTransport({
 // Store verification codes temporarily (in production, use Redis)
 const verificationCodes = new Map();
 
+// Test email configuration
+router.get('/test-email', async (req, res) => {
+  try {
+    // Verify transporter configuration
+    await transporter.verify();
+    res.json({ 
+      message: 'Email service is working correctly',
+      config: {
+        service: 'gmail',
+        user: process.env.EMAIL_USER,
+        hasPassword: !!process.env.EMAIL_PASS
+      }
+    });
+  } catch (error) {
+    console.error('Email service test failed:', error);
+    res.status(500).json({ 
+      message: 'Email service configuration error',
+      error: error.message,
+      config: {
+        service: 'gmail',
+        user: process.env.EMAIL_USER,
+        hasPassword: !!process.env.EMAIL_PASS
+      }
+    });
+  }
+});
+
 // Send verification email
 router.post('/verify-email', async (req, res) => {
   try {
