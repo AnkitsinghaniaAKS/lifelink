@@ -28,7 +28,7 @@ const PatientRequest = () => {
     setError('');
     
     try {
-      await axios.post('http://localhost:5000/api/patient/request', formData);
+      await axios.post('/api/patient/request', formData);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Request failed');

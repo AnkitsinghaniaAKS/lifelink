@@ -26,7 +26,7 @@ const DonorSearch = () => {
 
   const fetchDonors = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/donor');
+      const response = await axios.get('/api/donor');
       setDonors(response.data);
       setFilteredDonors(response.data);
     } catch (err) {

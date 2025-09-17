@@ -83,7 +83,7 @@ const Register = () => {
       setError('');
       
       // Send the credential to your backend
-      const res = await axios.post('http://localhost:5000/api/auth/google', {
+      const res = await axios.post('/api/auth/google', {
         credential: response.credential
       });
       

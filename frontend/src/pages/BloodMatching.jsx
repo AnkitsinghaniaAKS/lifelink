@@ -15,7 +15,7 @@ const BloodMatching = () => {
     
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/patient/donors/${selectedBloodType}`);
+      const res = await axios.get(`/api/patient/donors/${selectedBloodType}`);
       setMatchingData(res.data);
     } catch (error) {
       console.error('Error fetching donors:', error);

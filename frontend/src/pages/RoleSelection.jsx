@@ -27,7 +27,7 @@ const RoleSelection = () => {
       setError('');
       
       // Update user role in backend
-      const res = await axios.post('http://localhost:5000/api/auth/update-role', {
+      const res = await axios.post('/api/auth/update-role', {
         userId: userData._id,
         role: selectedRole
       }, {

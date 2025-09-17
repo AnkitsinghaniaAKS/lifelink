@@ -28,7 +28,7 @@ const DonorRegistration = () => {
     setError('');
     
     try {
-      await axios.post('http://localhost:5000/api/donor/register', formData);
+      await axios.post('/api/donor/register', formData);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');

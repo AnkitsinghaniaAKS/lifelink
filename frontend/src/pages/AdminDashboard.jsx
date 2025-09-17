@@ -20,8 +20,8 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
       const [donorsRes, patientsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/donor'),
-        axios.get('http://localhost:5000/api/patient')
+        axios.get('/api/donor'),
+        axios.get('/api/patient')
       ]);
 
       const donorsData = donorsRes.data;
