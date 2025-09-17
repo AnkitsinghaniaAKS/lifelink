@@ -9,7 +9,7 @@ const router = express.Router();
 const createTransporter = () => {
   // Use Brevo (formerly Sendinblue) - free tier with 300 emails/day
   if (process.env.BREVO_API_KEY) {
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
       port: 587,
       secure: false,
@@ -20,15 +20,16 @@ const createTransporter = () => {
     });
   }
   
-  // Fallback to Ethereal (for testing)
-  return nodemailer.createTransporter({
-    host: 'smtp.ethereal.email',
+  // Fallback to Gmail
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     auth: {
-      user: 'ethereal.user@ethereal.email',
-      pass: 'ethereal.pass'
-    }
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    tls: { rejectUnauthorized: false }
   });
 };
 

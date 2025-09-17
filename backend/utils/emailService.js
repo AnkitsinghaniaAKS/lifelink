@@ -11,7 +11,7 @@ class EmailService {
     if (process.env.BREVO_API_KEY) {
       this.transporters.push({
         name: 'Brevo',
-        transporter: nodemailer.createTransporter({
+        transporter: nodemailer.createTransport({
           host: 'smtp-relay.brevo.com',
           port: 587,
           secure: false,
@@ -27,7 +27,7 @@ class EmailService {
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       this.transporters.push({
         name: 'Gmail',
-        transporter: nodemailer.createTransporter({
+        transporter: nodemailer.createTransport({
           host: 'smtp.gmail.com',
           port: 587,
           secure: false,
@@ -43,7 +43,7 @@ class EmailService {
     // Ethereal for testing
     this.transporters.push({
       name: 'Ethereal',
-      transporter: nodemailer.createTransporter({
+      transporter: nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,
