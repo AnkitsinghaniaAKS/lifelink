@@ -178,11 +178,15 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
     });
     
     console.log('✅ MongoDB Connected Successfully');
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
+    console.error('💡 Please check MongoDB Atlas Network Access settings');
+    console.error('💡 Add 0.0.0.0/0 to IP whitelist or add Render IP ranges');
     process.exit(1);
   }
 };
