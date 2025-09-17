@@ -162,17 +162,15 @@ const RegisterWithVerification = () => {
 
   const sendEmailViaEmailJS = async (email, verificationCode) => {
     try {
-      const templateParams = {
-        user_name: email.split('@')[0],
-        user_email: email,
-        verification_code: verificationCode,
-        message: verificationCode
-      };
-
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
         EMAILJS_CONFIG.templateId,
-        templateParams,
+        {
+          to_email: email,
+          from_name: 'LifeLink',
+          message: `Your verification code is: ${verificationCode}`,
+          reply_to: 'noreply@lifelink.com'
+        },
         EMAILJS_CONFIG.publicKey
       );
 
