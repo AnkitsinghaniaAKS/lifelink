@@ -14,7 +14,7 @@ import '../config/api.js';
 const EMAILJS_CONFIG = {
   serviceId: 'service_emgzhzz',
   templateId: 'template_5mjn6h9',
-  publicKey: 'mAtmlTnwSGCDdlhtbF0IY'
+  publicKey: '8FuAwD5eILvSv8c5P'
 };
 
 const RegisterWithVerification = () => {
@@ -161,6 +161,15 @@ const RegisterWithVerification = () => {
   };
 
   const sendEmailViaEmailJS = async (email, verificationCode) => {
+    // Check if EmailJS is properly configured
+    if (!EMAILJS_CONFIG.serviceId || !EMAILJS_CONFIG.templateId || !EMAILJS_CONFIG.publicKey ||
+        EMAILJS_CONFIG.serviceId === 'YOUR_SERVICE_ID' || 
+        EMAILJS_CONFIG.templateId === 'YOUR_TEMPLATE_ID' ||
+        EMAILJS_CONFIG.publicKey === 'YOUR_PUBLIC_KEY') {
+      console.warn('⚠️ EmailJS not configured properly. Skipping email send.');
+      return false;
+    }
+
     try {
       const result = await emailjs.send(
         EMAILJS_CONFIG.serviceId,
@@ -215,7 +224,10 @@ const RegisterWithVerification = () => {
           setStep(2);
           setError('');
         } else {
-          setError('Failed to send email. Please try again or use Google Sign-In.');
+          // EmailJS failed, but backend verification still works
+          console.log('📧 Email sending failed, but verification code is available in console');
+          setStep(2);
+          setError('Email sending failed. Check console for verification code or use Google Sign-In.');
         }
       } else {
         setError(res.data.message || 'Failed to generate verification code');
