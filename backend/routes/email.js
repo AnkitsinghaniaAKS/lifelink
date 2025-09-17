@@ -1,69 +1,11 @@
 const express = require('express');
-const crypto = require('crypto');
 const User = require('../models/User');
 const router = express.Router();
 
 // Store verification codes temporarily
 const verificationCodes = new Map();
 
-// Use Resend API - works reliably on Render
-const sendEmailWithResend = async (email, code) => {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY not configured');
-  }
-
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'LifeLink <noreply@resend.dev>',
-      to: [email],
-      subject: 'Verify your LifeLink account',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #ef4444; margin: 0;">LifeLink</h1>
-            <p style="color: #6b7280; margin: 5px 0;">Blood Donation Platform</p>
-          </div>
-          
-          <h2 style="color: #1f2937;">Welcome to LifeLink!</h2>
-          
-          <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for joining our life-saving community. Please verify your email address using the code below:
-          </p>
-          
-          <div style="background-color: #f3f4f6; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0;">
-            <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">VERIFICATION CODE</p>
-            <div style="font-size: 32px; font-weight: bold; color: #ef4444; letter-spacing: 4px; font-family: monospace;">${code}</div>
-          </div>
-          
-          <p style="color: #ef4444; font-weight: bold;">This code expires in 5 minutes.</p>
-          
-          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            If you didn't create an account, please ignore this email.
-          </p>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-            © 2024 LifeLink - Saving lives, one donation at a time.
-          </p>
-        </div>
-      `
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Resend API error: ${error}`);
-  }
-
-  return await response.json();
-};
-
-// Send verification email
+// Generate verification code (no email sending - frontend handles it)
 router.post('/verify-email', async (req, res) => {
   try {
     const { email } = req.body;
@@ -88,28 +30,15 @@ router.post('/verify-email', async (req, res) => {
       attempts: 0
     });
     
-    try {
-      // Send email using Resend
-      await sendEmailWithResend(email, verificationCode);
-      console.log(`✅ Email sent successfully to ${email}`);
-      
-      res.json({
-        message: 'Verification code sent to your email',
-        email: email,
-        success: true
-      });
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError.message);
-      
-      // Still store the code and respond success
-      console.log(`🔑 Verification code for ${email}: ${verificationCode}`);
-      
-      res.json({
-        message: 'Verification code generated. Check server logs if email fails.',
-        email: email,
-        success: true
-      });
-    }
+    console.log(`🔑 Verification code for ${email}: ${verificationCode}`);
+    
+    // Return code for frontend to send via EmailJS
+    res.json({
+      message: 'Verification code generated',
+      email: email,
+      verificationCode: verificationCode,
+      success: true
+    });
     
   } catch (error) {
     console.error('Email verification error:', error);

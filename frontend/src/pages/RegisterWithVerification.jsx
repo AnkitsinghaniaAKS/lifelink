@@ -5,9 +5,17 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Logo from '../components/Logo';
 import axios from 'axios';
+import emailjs from '@emailjs/browser';
 
 // Import centralized API configuration
 import '../config/api.js';
+
+// EmailJS Configuration
+const EMAILJS_CONFIG = {
+  serviceId: 'service_emgzhzz',
+  templateId: 'template_5mjn6h9',
+  publicKey: 'mAtmlTnwSGCDdlhtbF0IY'
+};
 
 const RegisterWithVerification = () => {
   const [step, setStep] = useState(1);
@@ -26,6 +34,11 @@ const RegisterWithVerification = () => {
   const navigate = useNavigate();
 
   const GOOGLE_CLIENT_ID = '186166963636-ocnkfu3ou1nu6n8k8m3jioqge2ednegt.apps.googleusercontent.com';
+  
+  // Initialize EmailJS
+  useEffect(() => {
+    emailjs.init(EMAILJS_CONFIG.publicKey);
+  }, []);
   
   const generateCodeChallenge = async () => {
     const codeVerifier = generateRandomString(128);
@@ -147,6 +160,30 @@ const RegisterWithVerification = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const sendEmailViaEmailJS = async (email, verificationCode) => {
+    try {
+      const templateParams = {
+        user_email: email,
+        user_name: email.split('@')[0],
+        verification_code: verificationCode,
+        to_email: email
+      };
+
+      const result = await emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        EMAILJS_CONFIG.templateId,
+        templateParams,
+        EMAILJS_CONFIG.publicKey
+      );
+
+      console.log('✅ Email sent successfully:', result);
+      return true;
+    } catch (error) {
+      console.error('❌ EmailJS failed:', error);
+      return false;
+    }
+  };
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -164,25 +201,30 @@ const RegisterWithVerification = () => {
     }
     
     try {
+      // Get verification code from backend
       const res = await axios.post('/api/email/verify-email', {
         email: formData.email.toLowerCase().trim()
-      }, {
-        timeout: 20000
       });
       
-      if (res.data.success) {
-        setStep(2);
-        setError('');
+      if (res.data.success && res.data.verificationCode) {
+        // Send email using EmailJS
+        const emailSent = await sendEmailViaEmailJS(
+          formData.email.toLowerCase().trim(),
+          res.data.verificationCode
+        );
+        
+        if (emailSent) {
+          setStep(2);
+          setError('');
+        } else {
+          setError('Failed to send email. Please try again or use Google Sign-In.');
+        }
       } else {
-        setError(res.data.message || 'Failed to send verification email');
+        setError(res.data.message || 'Failed to generate verification code');
       }
     } catch (err) {
-      if (err.code === 'ECONNABORTED') {
-        setError('Request timeout. Please check your internet connection and try again.');
-      } else if (err.response?.status === 400) {
+      if (err.response?.status === 400) {
         setError(err.response.data.message || 'Invalid email address');
-      } else if (err.response?.status === 500) {
-        setError('Server error. Please try again in a few moments.');
       } else {
         setError('Network error. Please check your connection and try again.');
       }
