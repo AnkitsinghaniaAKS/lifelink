@@ -2,16 +2,37 @@ const express = require('express');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
+const emailService = require('../utils/emailService');
 const router = express.Router();
 
-// Create email transporter (using Gmail for demo)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'demo@gmail.com',
-    pass: process.env.EMAIL_PASS || 'demo_password'
+// Create production-ready email transporter
+const createTransporter = () => {
+  // Use Brevo (formerly Sendinblue) - free tier with 300 emails/day
+  if (process.env.BREVO_API_KEY) {
+    return nodemailer.createTransporter({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.BREVO_EMAIL,
+        pass: process.env.BREVO_API_KEY
+      }
+    });
   }
-});
+  
+  // Fallback to Ethereal (for testing)
+  return nodemailer.createTransporter({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'ethereal.user@ethereal.email',
+      pass: 'ethereal.pass'
+    }
+  });
+};
+
+let transporter = createTransporter();
 
 // Store verification codes temporarily (in production, use Redis)
 const verificationCodes = new Map();
@@ -63,45 +84,17 @@ router.post('/verify-email', async (req, res) => {
       expires: Date.now() + 5 * 60 * 1000
     });
     
-    // Send real email with timeout
-    const emailPromise = transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'LifeLink Email Verification',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #ef4444;">Welcome to LifeLink!</h2>
-          <p>Thank you for registering with LifeLink - Blood Donation Platform.</p>
-          <p>Your verification code is:</p>
-          <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <h1 style="color: #ef4444; font-size: 32px; margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
-          </div>
-          <p><strong>This code will expire in 5 minutes.</strong></p>
-          <p>If you didn't request this verification, please ignore this email.</p>
-          <hr style="margin: 30px 0;">
-          <p style="color: #6b7280; font-size: 14px;">LifeLink - Saving lives, one donation at a time.</p>
-        </div>
-      `
-    });
+    // Send email using the robust email service
+    const emailResult = await emailService.sendVerificationEmail(email, verificationCode);
     
-    // Set timeout for email sending
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Email timeout')), 15000)
-    );
-    
-    try {
-      await Promise.race([emailPromise, timeoutPromise]);
-      console.log(`✅ Verification email sent to ${email}`);
-    } catch (emailError) {
-      console.error('❌ Email sending failed:', emailError.message);
-      // Always log the code as fallback for development
-      console.log(`🔑 Verification code for ${email}: ${verificationCode}`);
-      // Don't throw error - still allow the process to continue
-    }
+    // Always log the code for development/testing
+    console.log(`🔑 Verification code for ${email}: ${verificationCode}`);
     
     res.json({ 
-      message: 'Verification code sent to your email',
-      email: email
+      message: emailResult.success ? 'Verification code sent to your email' : 'Verification code generated (check server logs for testing)',
+      email: email,
+      emailSent: emailResult.success,
+      service: emailResult.service || 'none'
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
