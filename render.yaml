@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: lifelink-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        fromDatabase:
+          name: lifelink-db
+          property: connectionString

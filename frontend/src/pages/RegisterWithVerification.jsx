@@ -5,7 +5,38 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Logo from '../components/Logo';
 import axios from 'axios';
-import API_BASE_URL from '../config/api';
+
+// Configure axios for production
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Set default axios configuration
+axios.defaults.baseURL = API_BASE_URL;
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Add request interceptor for debugging
+axios.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url);
+    return config;
+  },
+  (error) => {
+    console.error('Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+axios.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('Response Error:', error.response?.status, error.config?.url, error.message);
+    return Promise.reject(error);
+  }
+);
 
 const RegisterWithVerification = () => {
   const [step, setStep] = useState(1); // 1: Email, 2: Verify, 3: Complete
