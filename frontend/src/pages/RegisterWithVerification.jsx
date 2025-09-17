@@ -161,11 +161,17 @@ const RegisterWithVerification = () => {
     try {
       const res = await axios.post('/api/email/verify-email', {
         email: formData.email
+      }, {
+        timeout: 60000 // 60 seconds timeout
       });
       // Email sent successfully
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || 'Email verification failed');
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        setError('Email service is taking longer than expected. Please try again or use Google Sign-In.');
+      } else {
+        setError(err.response?.data?.message || 'Email verification failed. Please try Google Sign-In instead.');
+      }
     } finally {
       setLoading(false);
     }
@@ -240,7 +246,12 @@ const RegisterWithVerification = () => {
         {step === 1 && (
           <div className="mb-6">
             <button 
-              onClick={handleGoogleSignIn}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleGoogleSignIn();
+              }}
               disabled={loading}
               className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 flex items-center justify-center font-medium transition-colors disabled:opacity-50 shadow-sm"
             >

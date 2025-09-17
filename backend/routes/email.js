@@ -36,32 +36,40 @@ router.post('/verify-email', async (req, res) => {
       expires: Date.now() + 5 * 60 * 1000
     });
     
-    // Send real email
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'LifeLink Email Verification',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #ef4444;">Welcome to LifeLink!</h2>
-            <p>Thank you for registering with LifeLink - Blood Donation Platform.</p>
-            <p>Your verification code is:</p>
-            <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-              <h1 style="color: #ef4444; font-size: 32px; margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
-            </div>
-            <p><strong>This code will expire in 5 minutes.</strong></p>
-            <p>If you didn't request this verification, please ignore this email.</p>
-            <hr style="margin: 30px 0;">
-            <p style="color: #6b7280; font-size: 14px;">LifeLink - Saving lives, one donation at a time.</p>
+    // Send real email with timeout
+    const emailPromise = transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'LifeLink Email Verification',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #ef4444;">Welcome to LifeLink!</h2>
+          <p>Thank you for registering with LifeLink - Blood Donation Platform.</p>
+          <p>Your verification code is:</p>
+          <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+            <h1 style="color: #ef4444; font-size: 32px; margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
           </div>
-        `
-      });
-      console.log(`Verification email sent to ${email}`);
+          <p><strong>This code will expire in 5 minutes.</strong></p>
+          <p>If you didn't request this verification, please ignore this email.</p>
+          <hr style="margin: 30px 0;">
+          <p style="color: #6b7280; font-size: 14px;">LifeLink - Saving lives, one donation at a time.</p>
+        </div>
+      `
+    });
+    
+    // Set timeout for email sending
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email timeout')), 15000)
+    );
+    
+    try {
+      await Promise.race([emailPromise, timeoutPromise]);
+      console.log(`✅ Verification email sent to ${email}`);
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      // Still log the code as fallback
-      console.log(`Verification code for ${email}: ${verificationCode}`);
+      console.error('❌ Email sending failed:', emailError.message);
+      // Always log the code as fallback for development
+      console.log(`🔑 Verification code for ${email}: ${verificationCode}`);
+      // Don't throw error - still allow the process to continue
     }
     
     res.json({ 
