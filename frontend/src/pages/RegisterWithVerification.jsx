@@ -5,17 +5,11 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Logo from '../components/Logo';
 import axios from 'axios';
-import emailjs from '@emailjs/browser';
+import { auth } from '../config/firebase';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
 
 // Import centralized API configuration
 import '../config/api.js';
-
-// EmailJS Configuration
-const EMAILJS_CONFIG = {
-  serviceId: 'service_emgzhzz',
-  templateId: 'template_5mjn6h9',
-  publicKey: '8FuAwD5eILvSv8c5P'
-};
 
 const RegisterWithVerification = () => {
   const [step, setStep] = useState(1);
@@ -29,16 +23,12 @@ const RegisterWithVerification = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [firebaseUser, setFirebaseUser] = useState(null);
 
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const GOOGLE_CLIENT_ID = '186166963636-ocnkfu3ou1nu6n8k8m3jioqge2ednegt.apps.googleusercontent.com';
-  
-  // Initialize EmailJS
-  useEffect(() => {
-    emailjs.init(EMAILJS_CONFIG.publicKey);
-  }, []);
   
   const generateCodeChallenge = async () => {
     const codeVerifier = generateRandomString(128);
@@ -160,42 +150,6 @@ const RegisterWithVerification = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const sendEmailViaEmailJS = async (email, verificationCode) => {
-    try {
-      // Initialize EmailJS with public key
-      emailjs.init(EMAILJS_CONFIG.publicKey);
-      
-      const templateParams = {
-        user_name: email.split('@')[0],
-        user_email: email,
-        to_email: email,
-        from_name: 'LifeLink',
-        message: verificationCode,
-        verification_code: verificationCode,
-        reply_to: 'noreply@lifelink.com'
-      };
-
-      console.log('📧 Sending email with params:', templateParams);
-      
-      const result = await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId,
-        templateParams
-      );
-
-      console.log('✅ Email sent successfully:', result);
-      return true;
-    } catch (error) {
-      console.error('❌ EmailJS failed:', error);
-      console.error('Error details:', {
-        serviceId: EMAILJS_CONFIG.serviceId,
-        templateId: EMAILJS_CONFIG.templateId,
-        publicKey: EMAILJS_CONFIG.publicKey
-      });
-      return false;
-    }
-  };
-
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -213,36 +167,32 @@ const RegisterWithVerification = () => {
     }
     
     try {
-      // Get verification code from backend
-      const res = await axios.post('/api/email/verify-email', {
-        email: formData.email.toLowerCase().trim()
-      });
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        formData.email.toLowerCase().trim(), 
+        'temp_password_' + Math.random().toString(36)
+      );
       
-      if (res.data.success && res.data.verificationCode) {
-        // Send email using EmailJS
-        const emailSent = await sendEmailViaEmailJS(
-          formData.email.toLowerCase().trim(),
-          res.data.verificationCode
-        );
-        
-        // Always proceed to step 2, regardless of email success
-        setStep(2);
-        
-        if (emailSent) {
-          setError('');
-        } else {
-          // EmailJS failed, but backend verification still works
-          console.log('🔑 Verification code for testing:', res.data.verificationCode);
-          setError('Email service unavailable. For testing, check browser console for the verification code.');
-        }
-      } else {
-        setError(res.data.message || 'Failed to generate verification code');
-      }
+      // Send verification email
+      await sendEmailVerification(userCredential.user);
+      
+      setFirebaseUser(userCredential.user);
+      setStep(2);
+      setError('');
+      
+      console.log('✅ Firebase verification email sent to:', formData.email);
+      
     } catch (err) {
-      if (err.response?.status === 400) {
-        setError(err.response.data.message || 'Invalid email address');
+      console.error('Firebase error:', err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Email already registered. Please use a different email or try signing in.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password is too weak. Please choose a stronger password.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address format.');
       } else {
-        setError('Network error. Please check your connection and try again.');
+        setError('Failed to send verification email. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -258,26 +208,32 @@ const RegisterWithVerification = () => {
     setLoading(true);
     setError('');
     
-    if (!formData.verificationCode || formData.verificationCode.length !== 6) {
-      setError('Please enter a valid 6-digit verification code');
-      setLoading(false);
-      return;
-    }
-    
     try {
-      const res = await axios.post('/api/email/verify-token', {
-        email: formData.email.toLowerCase().trim(),
-        token: formData.verificationCode
-      });
+      // Reload user to check verification status
+      await firebaseUser.reload();
       
-      if (res.data.verified) {
+      if (firebaseUser.emailVerified) {
         setStep(3);
         setError('');
       } else {
-        setError(res.data.message || 'Invalid verification code');
+        setError('Email not verified yet. Please check your email and click the verification link.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Verification failed. Please try again.');
+      setError('Verification check failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerificationEmail = async () => {
+    if (!firebaseUser) return;
+    
+    try {
+      setLoading(true);
+      await sendEmailVerification(firebaseUser);
+      setError('Verification email resent. Please check your inbox.');
+    } catch (err) {
+      setError('Failed to resend verification email.');
     } finally {
       setLoading(false);
     }
@@ -293,12 +249,15 @@ const RegisterWithVerification = () => {
     setError('');
     
     try {
+      // Register user in your backend
       await register({
         name: formData.name.trim(),
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
-        role: formData.role
+        role: formData.role,
+        firebaseUid: firebaseUser.uid
       });
+      
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed');
@@ -316,12 +275,12 @@ const RegisterWithVerification = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
             {step === 1 && 'Verify Your Email'}
-            {step === 2 && 'Enter Verification Code'}
+            {step === 2 && 'Check Your Email'}
             {step === 3 && 'Complete Registration'}
           </h2>
           <p className="text-gray-600 mt-2">
             {step === 1 && 'We need to verify your email address first'}
-            {step === 2 && `Code sent to ${formData.email}`}
+            {step === 2 && `Verification email sent to ${formData.email}`}
             {step === 3 && 'Almost done! Fill in your details'}
           </p>
         </div>
@@ -377,36 +336,41 @@ const RegisterWithVerification = () => {
                 />
               </div>
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? 'Sending Code...' : 'Send Verification Code'}
+                {loading ? 'Sending Verification...' : 'Send Verification Email'}
               </Button>
             </form>
           </>
         )}
 
         {step === 2 && (
-          <form onSubmit={handleVerificationSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Verification Code
-              </label>
-              <input
-                type="text"
-                name="verificationCode"
-                value={formData.verificationCode}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-center text-lg tracking-widest disabled:opacity-50"
-                placeholder="Enter 6-digit code"
-                maxLength="6"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Check your email for the 6-digit verification code
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 mb-4">
+                We've sent a verification link to your email. Please check your inbox and click the link to verify your account.
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                Don't forget to check your spam folder if you don't see the email.
               </p>
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Verifying...' : 'Verify Code'}
+            
+            <Button onClick={handleVerificationSubmit} disabled={loading} className="w-full">
+              {loading ? 'Checking...' : 'I\'ve Verified My Email'}
             </Button>
+            
+            <button
+              type="button"
+              onClick={resendVerificationEmail}
+              disabled={loading}
+              className="w-full text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+            >
+              Resend verification email
+            </button>
+            
             <Button 
               type="button" 
               onClick={() => setStep(1)}
@@ -415,7 +379,7 @@ const RegisterWithVerification = () => {
             >
               Back to Email
             </Button>
-          </form>
+          </div>
         )}
 
         {step === 3 && (
