@@ -7,10 +7,27 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://lifelink-tan.vercel.app'],
-  credentials: true
+  origin: ['https://lifelink-tan.vercel.app', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'LifeLink API Server', 
+    status: 'Running',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      donor: '/api/donor',
+      patient: '/api/patient',
+      email: '/api/email'
+    }
+  });
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
