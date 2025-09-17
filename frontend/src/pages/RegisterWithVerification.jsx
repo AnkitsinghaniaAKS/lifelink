@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Logo from '../components/Logo';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 
 const RegisterWithVerification = () => {
   const [step, setStep] = useState(1); // 1: Email, 2: Verify, 3: Complete
@@ -72,7 +73,7 @@ const RegisterWithVerification = () => {
       }
       
       // Exchange code for tokens
-      const res = await axios.post('http://localhost:5000/api/auth/google-oauth', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google-oauth`, {
         code,
         codeVerifier,
         redirectUri: `${window.location.origin}${window.location.pathname}`
@@ -156,7 +157,7 @@ const RegisterWithVerification = () => {
     setError('');
     
     try {
-      const res = await axios.post('http://localhost:5000/api/email/verify-email', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/email/verify-email`, {
         email: formData.email
       });
       // Email sent successfully
@@ -174,7 +175,7 @@ const RegisterWithVerification = () => {
     setError('');
     
     try {
-      await axios.post('http://localhost:5000/api/email/verify-token', {
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/email/verify-token`, {
         email: formData.email,
         token: formData.verificationCode
       });

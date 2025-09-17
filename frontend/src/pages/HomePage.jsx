@@ -74,8 +74,8 @@ const HomePage = () => {
   const fetchStats = async () => {
     try {
       const [donorsRes, requestsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/donor'),
-        axios.get('http://localhost:5000/api/patient/requests')
+        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/donor`),
+        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/patient/requests`)
       ]);
       
       setStats({
