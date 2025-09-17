@@ -21,11 +21,11 @@ const Dashboard = () => {
     try {
       if (user?.role === 'donor') {
         // Fetch all patient requests for donors to see
-        const requestsRes = await axios.get('http://localhost:5000/api/patient/requests');
+        const requestsRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/patient/requests`);
         setUserRequests(requestsRes.data);
       } else if (user?.role === 'patient') {
         // Fetch user's own requests
-        const requestsRes = await axios.get('http://localhost:5000/api/patient/requests');
+        const requestsRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/patient/requests`);
         // Filter to show only current user's requests (would need user ID matching in real app)
         setUserRequests(requestsRes.data);
       }

@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         res = { data: { email, token, name: 'Google User' } };
       } else {
         // Regular login
-        res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+        res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, { email, password });
       }
       dispatch({ type: 'LOGIN_SUCCESS', payload: res.data });
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', userData);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`, userData);
       dispatch({ type: 'LOGIN_SUCCESS', payload: res.data });
       axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       return res.data;
